@@ -1,32 +1,59 @@
 ﻿
 
+
 using System;
+using System.Text;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 
 
-
-namespace App
+namespace AsciiArt
 {
-    public class MainApp
+    class Program
     {
-        static public bool RevversInt(int num)
+        private static readonly string _asciiChars = "@%#*+-. ";
+        static void Main()
         {
-            int NewNum = num;
-            int res = 0;
-            while(NewNum>0)
+            string path = "./1000102881.jpg";
+            if (!System.IO.File.Exists(path))
             {
-                res = res *10 + NewNum %10;
-                NewNum /= 10;
+                Console.WriteLine("Error file is not exists");
+                return;
             }
-            if(res == num)
-                return true;
-            else
-                return false;
-        }
-        static public void Main()
-        {
-            int num =-121;
-            Console.WriteLine(RevversInt(num));
+            try
+            {
+                using (Image<Rgba32> image = Image.Load<Rgba32>(path))
+                {
+                    int consoleWidth = 250;
+                    double aspectRatio = (double)image.Height / image.Width;
+                    int consoleHeight = (int)(consoleWidth * aspectRatio * 0.4);
+                    image.Mutate(x=>x.Resize(consoleWidth,consoleHeight));
+                    StringBuilder art = new StringBuilder();
+                    image.ProcessPixelRows(accessor=>{
+                            for(int y =0;y<accessor.Height;y++)
+                            {
+                                var pixelRow = accessor.GetRowSpan(y);
+                                for(int x =0;x<pixelRow.Length;x++)
+                                {
+                                    Rgba32 pixel = pixelRow[x];
+                                    int brightness = (pixel.R + pixel.G + pixel.B )/3;
+                                    int charIndex = (brightness*(_asciiChars.Length-1))/255;
+                                    art.Append(_asciiChars[charIndex]);
+                                }
+                                art.AppendLine();
+                                
+                            }
+                            });
+                    Console.WriteLine(art.ToString());
+                }
+
+            }
+            catch(Exception err)
+            {
+                Console.WriteLine($"ERROR {err.Message}");
+            }
 
         }
     }
